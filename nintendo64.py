@@ -23,8 +23,8 @@ class Nintendo64:
                     time.sleep(1 / 60)
                     self.frame += 1
             except KeyboardInterrupt:
-                self.write_reset()
-                self.flush_user()
+                self._reset()
+                self.flush()
                 time.sleep(0.25)
                 self.protocol.reset()
 

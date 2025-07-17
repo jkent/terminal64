@@ -4,12 +4,17 @@
 
 #include <libdragon.h>
 
-typedef enum {
-    ENTITY_TYPE_NONE,
-    ENTITY_TYPE_RECT,
-    ENTITY_TYPE_BALL,
+typedef enum __packed {
+    ENTITY_TYPE_FREE,
+    ENTITY_TYPE_SPRITE,
+    ENTITY_TYPE_RECTANGLE,
+    ENTITY_TYPE_CIRCLE,
     ENTITY_TYPE_TEXT,
 } entity_type_t;
+
+typedef enum __packed {
+    ENTITY_FLAGS_TRANS = 1 << 0,
+} entity_flags_t;
 
 typedef struct {
     uint16_t x;
@@ -19,14 +24,20 @@ typedef struct {
 } rect_t;
 
 typedef struct {
-    uint16_t type;
-    uint16_t flags;
-    rect_t rect;
+    entity_type_t type;
+    entity_flags_t flags;
+    uint16_t idx;
+    uint16_t x;
+    uint16_t y;
+    union {
+        uint16_t width;
+        uint16_t r;
+        uint16_t stride;
+    };
+    uint16_t height;
     uint32_t color;
-    void *user;
+    char data[0];
 } entity_t;
-
-extern entity_t entities[];
 
 void game_setup(void);
 void game_loop(void);
