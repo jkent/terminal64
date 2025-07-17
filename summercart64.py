@@ -47,7 +47,7 @@ class SummerCart64Protocol(serial.threaded.Protocol):
             if packet[0] == 'PKT' and packet[1] == 'U':
                 info = int.from_bytes(packet[3][:4], 'big')
                 type, length = info >> 24, info & 0xffffff
-                self.n64.recv_usb_packet(packet[3][4:4 + length], type)
+                self.n64.on_usb_packet(packet[3][4:4 + length], type)
             else:
                 print(packet)
 

@@ -23,6 +23,7 @@ class Paddle(Entity):
             self.x = offset
         elif id == 1:
             self.x = display_width - self.width - offset
+        self.pos = 0
 
     @property
     def pos(self):
@@ -66,22 +67,11 @@ class Score(Entity):
         self.x = 320 / 2 - len(self.text) * 8 / 2
 
 class Pong(Game):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.paddles = [Paddle(0), Paddle(1)]
-        self.ball = Ball(4)
-        self.score = Score()
-        self.entities = [self.score, self.ball] + self.paddles
-
     def setup(self):
-        for entity in self.entities:
-            entity._dirty = True
-        for paddle in self.paddles:
-            paddle.pos = 0
-        self.score.reset()
-        self.reset()
-        self._ready()
-        self.flush()
+        self.score = Score()
+        self.ball = Ball(4)
+        self.paddles = [Paddle(0), Paddle(1)]
+        self.restart()
 
     def loop(self):
         self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - 1)
@@ -96,23 +86,26 @@ class Pong(Game):
 
         if self.ball.x == 0:
             self.score.increment(1)
-            self.reset(1)
+            self.restart(1)
         elif self.ball.x == display_width - 1:
             self.score.increment(0)
-            self.reset(0)
+            self.restart(0)
 
-        self.flush()
-
-    def on_inputs(self, inputs):
-        pos = clamp(inputs['stick_y'] / -72.0, -1.0, 1.0)
+    def on_input(self, inputs):
+        pos = clamp(inputs.stick_y / -72.0, -1.0, 1.0)
         self.paddles[0].pos = pos
         self.paddles[1].pos = -pos
 
-    def reset(self, winner=1):
+    def restart(self, winner=1):
+        self.reset()
+        self.entities = [self.score, self.ball] + self.paddles
+        for entity in self.entities:
+            entity._dirty = True
         self.ball.x = display_width / 2 - self.ball.radius / 2
         self.ball.y = display_height / 2 - self.ball.radius / 2
-        self.delta_x = -3 if winner == 0 else 3
-        self.delta_y = random.choice([-3, 3])
+        self.delta_x = 3 if winner == 1 else -3
+        self.delta_y = random.choice([3, -3])
+        self.ready()
 
 if __name__ == '__main__':
     try:

@@ -22,50 +22,47 @@ class Game(Nintendo64):
         self.sprites = []
         self.entities = []
 
-    def recv_user_pkt(self, type, data):
+    def on_packet(self, type, data):
         if type == GAME_IN_INPUT:
             btn, stick_x, stick_y, cstick_x, cstick_y, analog_l, analog_r = \
                 struct.unpack('>Hbbbbbb', data)
-            inputs = {
-                'a': bool(btn & (1 << 15)),
-                'b': bool(btn & (1 << 14)),
-                'z': bool(btn & (1 << 13)),
-                'start': bool(btn & (1 << 12)),
-                'd_up': bool(btn & (1 << 11)),
-                'd_down': bool(btn & (1 << 10)),
-                'd_left': bool(btn & (1 << 9)),
-                'd_right': bool(btn & (1 << 8)),
-                'y': bool(btn & (1 << 7)),
-                'x': bool(btn & (1 << 6)),
-                'l': bool(btn & (1 << 5)),
-                'r': bool(btn & (1 << 4)),
-                'c_up': bool(btn & (1 << 3)),
-                'c_down': bool(btn & (1 << 2)),
-                'c_left': bool(btn & (1 << 1)),
-                'c_right': bool(btn & (1 << 0)),
-                'stick_x': stick_x,
-                'stick_y': stick_y,
-                'cstick_x': cstick_x,
-                'cstick_y': cstick_y,
-                'analog_l': analog_l,
-                'analog_r': analog_r,
-            }
-            self.on_inputs(inputs)
+            inputs = SimpleNamespace(
+                a = bool(btn & (1 << 15)),
+                b = bool(btn & (1 << 14)),
+                z = bool(btn & (1 << 13)),
+                start = bool(btn & (1 << 12)),
+                d_up = bool(btn & (1 << 11)),
+                d_down = bool(btn & (1 << 10)),
+                d_left = bool(btn & (1 << 9)),
+                d_right = bool(btn & (1 << 8)),
+                y = bool(btn & (1 << 7)),
+                x = bool(btn & (1 << 6)),
+                l = bool(btn & (1 << 5)),
+                r = bool(btn & (1 << 4)),
+                c_up = bool(btn & (1 << 3)),
+                c_down = bool(btn & (1 << 2)),
+                c_left = bool(btn & (1 << 1)),
+                c_right = bool(btn & (1 << 0)),
+                stick_x = stick_x,
+                stick_y = stick_y,
+                cstick_x = cstick_x,
+                cstick_y = cstick_y,
+                analog_l = analog_l,
+                analog_r = analog_r,
+            )
+            self.on_input(inputs)
         else:
             print(type, data)
 
-    def on_inputs(self, inputs):
-        print(inputs)
-
-    def _reset(self):
+    def reset(self):
         self.sprites = []
         self.entities = []
         self._send_buf += struct.pack('>HH', 0, GAME_OUT_RESET)
 
-    def _ready(self):
+    def ready(self):
         self._send_buf += struct.pack('>HH', 0, GAME_OUT_READY)
 
-    def flush(self):
+    def _flush(self, reset=False):
         for i, sprite in enumerate(self.sprites):
             if sprite.dirty:
                 pkt = i.to_bytes(2) + sprite.raw
@@ -79,6 +76,16 @@ class Game(Nintendo64):
         if self._send_buf:
             self.send_usb_packet(self._send_buf)
             self._send_buf = b''
+
+    # User functions to be overridden
+    def setup(self):
+        pass
+
+    def loop(self):
+        pass
+
+    def on_input(self, inputs):
+        print(inputs)
 
 class Sprite:
     def __init__(self):

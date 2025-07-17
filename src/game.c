@@ -168,11 +168,17 @@ static void game_out_reset(const comm_user_hdr_t *hdr)
     background = RGBA32(0x17, 0x17, 0x17, 0xff);
 
     for (int i = 0; i < _countof(sprites); i++) {
+        if (!sprites[i]) {
+            continue;
+        }
         free(sprites[i]);
         sprites[i] = NULL;
     }
 
     for (int i = 0; i < _countof(entities); i++) {
+        if (!entities[i]) {
+            continue;
+        }
         free(entities[i]);
         entities[i] = NULL;
     }
@@ -207,8 +213,10 @@ static void game_out_sprite(const comm_user_hdr_t *hdr)
     }
 
     if (sprite_len == 0) {
-        free(sprites[pkt.i]);
-        sprites[pkt.i] = NULL;
+        if (sprites[pkt.i]) {
+            free(sprites[pkt.i]);
+            sprites[pkt.i] = NULL;
+        }
         return;
     } else {
         void *p = realloc(sprites[pkt.i], sprite_len);
@@ -236,19 +244,18 @@ static void game_out_entity(const comm_user_hdr_t *hdr)
     }
 
     if (entity_len == 0) {
-        free(entities[pkt.i]);
-        entities[pkt.i] = NULL;
+        if (entities[pkt.i]) {
+            free(entities[pkt.i]);
+            entities[pkt.i] = NULL;
+        }
         return;
     } else if (entities[pkt.i]) {
-        /* only grow entities, never shrink */
-        if (malloc_usable_size(entities[pkt.i]) < entity_len) {
-            void *p = realloc(entities[pkt.i], entity_len);
-            if (p == NULL) {
-                comm_user_skip(entity_len);
-                return;
-            }
-            entities[pkt.i] = p;
+        void *p = realloc(entities[pkt.i], entity_len);
+        if (p == NULL) {
+            comm_user_skip(entity_len);
+            return;
         }
+        entities[pkt.i] = p;
     } else {
         entities[pkt.i] = malloc(entity_len);
     }
