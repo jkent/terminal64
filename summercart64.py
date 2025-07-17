@@ -17,6 +17,8 @@ class SummerCart64Protocol(serial.threaded.Protocol):
         self.reset()
 
     def reset(self):
+        time.sleep(0.1)
+
         count = 0
         self.transport.serial.dtr = True
         while not self.transport.serial.dsr and count < 10:

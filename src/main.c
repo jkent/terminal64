@@ -21,7 +21,7 @@ int main(void)
             ;
     }
 
-    game_init();
+    game_setup();
 
     while (true) {
         asm("wait");

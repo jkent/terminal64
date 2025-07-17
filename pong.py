@@ -4,7 +4,7 @@ import random
 import sys
 
 from entity import Entity
-from nintendo64 import Nintendo64
+from game import Game
 
 display_width = 320
 display_height = 240
@@ -37,7 +37,7 @@ class Paddle(Entity):
 
     @property
     def size(self):
-        return self.display_height / self.rect.height
+        return display_height / self.rect.height
     @pos.setter
     def size(self, value):
         self.rect.height = display_height * value
@@ -73,7 +73,7 @@ class Score(Entity):
         self.text = f'{self.score[0]}:{self.score[1]}'
         self.rect.tuple = (320 / 2 - len(self.text) * 8 / 2, 16, 0, 0)
 
-class Pong(Nintendo64):
+class Pong(Game):
     paddle_size = 0.25
 
     def __init__(self, *args, **kwargs):
@@ -86,16 +86,21 @@ class Pong(Nintendo64):
     def setup(self):
         for entity in self.entities:
             entity._dirty = True
+        for paddle in self.paddle:
+            paddle.pos = 0
+        self.score.reset()
         self.reset()
+        self.write_ready()
+        self.flush_user()
 
     def loop(self):
         self.ball.rect.x = clamp(self.ball.rect.x + self.delta_x, 0, display_width - 1)
         self.ball.rect.y = clamp(self.ball.rect.y + self.delta_y, 0, display_height - 1)
 
         if self.check_collision(self.ball, self.paddle[0]):
-            self.delta_x = 5
+            self.delta_x = 3
         elif self.check_collision(self.ball, self.paddle[1]):
-            self.delta_x = -5
+            self.delta_x = -3
         elif self.ball.rect.y == 0 or self.ball.rect.y == display_height - 1:
             self.delta_y = -self.delta_y
 
@@ -106,30 +111,19 @@ class Pong(Nintendo64):
             self.score.increment(0)
             self.reset(0)
 
-        self.update()
-
-    def check_collision(self, a, b):
-        a = a.rect.bbox
-        b = b.rect.bbox
-        return a[0] < b[2] and a[2] > b[0] and a[1] < b[3] and a[3] > b[1]
-
-    def reset(self, winner=1):
-        self.ball.rect.x = display_width / 2 - self.ball.radius / 2
-        self.ball.rect.y = display_height / 2 - self.ball.radius / 2
-        for paddle in self.paddle:
-            paddle.pos = 0
-        self.delta_x = -3 if winner == 0 else 3
-        self.delta_y = random.choice([-3, 3])
-
-    def update(self):
-        data = b''.join((e.packet for e in self.entities if e.dirty))
-        if data:
-            self.send_usb_packet(data)
+        self.write_entities()
+        self.flush_user()
 
     def inputs_change(self, inputs):
         pos = clamp(inputs['stick_y'] / -72.0, -1.0, 1.0)
         self.paddle[0].pos = pos
         self.paddle[1].pos = -pos
+
+    def reset(self, winner=1):
+        self.ball.rect.x = display_width / 2 - self.ball.radius / 2
+        self.ball.rect.y = display_height / 2 - self.ball.radius / 2
+        self.delta_x = -3 if winner == 0 else 3
+        self.delta_y = random.choice([-3, 3])
 
 if __name__ == '__main__':
     try:

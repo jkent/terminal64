@@ -5,14 +5,11 @@
 #include <libdragon.h>
 
 typedef enum {
-    ENTITY_NONE,
-    ENTITY_RECT,
-    ENTITY_BALL,
-    ENTITY_TEXT,
+    ENTITY_TYPE_NONE,
+    ENTITY_TYPE_RECT,
+    ENTITY_TYPE_BALL,
+    ENTITY_TYPE_TEXT,
 } entity_type_t;
-
-// typedef enum {
-// } entity_flags_t;
 
 typedef struct {
     uint16_t x;
@@ -31,5 +28,5 @@ typedef struct {
 
 extern entity_t entities[];
 
-void game_init(void);
+void game_setup(void);
 void game_loop(void);

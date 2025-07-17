@@ -2,6 +2,12 @@
 *.a
 build/
 
+## Python objects
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
 ## OSX junk
 .DS_Store
 .Trashes

@@ -1,7 +1,5 @@
 import struct
-from types import SimpleNamespace
-
-COMM_ENTITY = 0
+from game import GAME_OUT_ENTITY
 
 class Color:
     def __init__(self, **kw):
@@ -225,6 +223,6 @@ class Entity:
 
         pkt = struct.pack('>IHHQI', id, type, self.flags, self.rect.value,
                           self.color.value) + self._data
-        pkt = struct.pack('>HH', len(pkt), COMM_ENTITY) + pkt
+        pkt = struct.pack('>HH', len(pkt), GAME_OUT_ENTITY) + pkt
         self._dirty = False
         return pkt
