@@ -1,0 +1,23 @@
+## Build files
+*.a
+build/
+
+## OSX junk
+.DS_Store
+.Trashes
+._*
+
+## Temporary files
+*.tmp
+*.swp
+*~
+
+*.v64
+*.z64
+*.elf
+*.bin
+*.o
+*.dfs
+
+## Editors
+.vscode/settings.json

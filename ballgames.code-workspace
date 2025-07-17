@@ -1,0 +1,81 @@
+{
+	"folders": [
+		{
+			"name": "ball",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.trimTrailingWhitespace": true,
+		"C_Cpp.autoAddFileAssociations": false
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "build",
+				"type": "shell",
+				"command": "make",
+				"options": {
+					"cwd": "${workspaceFolder}"
+				},
+				"problemMatcher": [],
+				"group": "build",
+				"presentation": {
+					"echo": true,
+					"reveal": "never",
+					"revealProblems": "onProblem",
+					"focus": false,
+					"panel": "shared",
+					"showReuseMessage": true,
+					"clear": true
+				}
+			},
+			{
+				"label": "deploy",
+				"type": "shell",
+				"command": "make deploy",
+				"options": {
+					"cwd": "${workspaceFolder}"
+				},
+				"problemMatcher": [],
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"presentation": {
+					"echo": true,
+					"reveal": "never",
+					"revealProblems": "onProblem",
+					"focus": false,
+					"panel": "shared",
+					"showReuseMessage": true,
+					"clear": true
+				}
+			},
+			{
+				"label": "USB Autoattach",
+				"type": "shell",
+				"command": "${workspaceFolder}/tools/autoattach.py",
+				"group": "none",
+				"problemMatcher": [],
+				"isBackground": true,
+				"runOptions": {
+					"runOn": "folderOpen"
+				},
+				"presentation": {
+					"echo": false,
+					"reveal": "never",
+					"focus": false,
+					"panel": "shared",
+					"showReuseMessage": true,
+					"clear": false
+				},
+				"icon": {
+					"color": "terminal.ansiGreen",
+					"id": "debug-disconnect"
+				}
+			}
+		]
+	}
+}

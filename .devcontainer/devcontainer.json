@@ -1,0 +1,6 @@
+{
+    "image": "ghcr.io/dragonminded/libdragon:latest",
+    "workspaceMount":  "source=${localWorkspaceFolder},target=/project,type=bind",
+    "workspaceFolder": "/project",
+    "postCreateCommand": "cd libdragon && ./build.sh"
+}
