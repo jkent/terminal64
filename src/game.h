@@ -33,10 +33,13 @@ typedef struct {
     uint16_t y;
     union {
         uint16_t width;
-        uint16_t r;
-        uint16_t stride;
+        uint16_t radius;
+        uint16_t tile;
     };
-    uint16_t height;
+    union {
+        uint16_t height;
+        uint16_t degrees;
+    };
     uint32_t color;
     char data[0];
 } entity_t;

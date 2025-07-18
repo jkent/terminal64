@@ -88,9 +88,11 @@ class Game(Nintendo64):
         print(inputs)
 
 class Sprite:
-    def __init__(self):
+    def __init__(self, path=None):
         self._data = b''
         self._dirty = True
+        if path:
+            self.load(path)
 
     @property
     def data(self):
@@ -190,25 +192,8 @@ class Entity:
         self._raw[8:10] = value.to_bytes(2)
         self._dirty = True
 
-    @property
-    def radius(self):
-        return int.from_bytes(self._raw[8:10])
-    @radius.setter
-    def radius(self, value):
-        if self.radius == value:
-            return
-        self._raw[8:10] = value.to_bytes(2)
-        self._dirty = True
-
-    @property
-    def stride(self):
-        return int.from_bytes(self._raw[8:10])
-    @stride.setter
-    def stride(self, value):
-        if self.stride == value:
-            return
-        self._raw[8:10] = value.to_bytes(2)
-        self._dirty = True
+    radius = width
+    tile = width
 
     @property
     def height(self):
@@ -220,6 +205,8 @@ class Entity:
             return
         self._raw[10:12] = value.to_bytes(2)
         self._dirty = True
+
+    degrees = height
 
     @property
     def bbox(self):

@@ -1,6 +1,7 @@
 ## Build files
 *.a
 build/
+filesystem/
 
 ## Python objects
 __pycache__/

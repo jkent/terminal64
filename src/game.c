@@ -39,14 +39,15 @@ comm_user_func_t game_comm_handlers[] = {
 };
 
 static color_t background;
-static sprite_t *sprites[256] = {0};
-static entity_t *entities[1024] = {0};
+static void *sprites_buf[256];
+static sprite_t *sprites[256];
+static entity_t *entities[1024];
 static bool waiting_for_host;
 
 void game_setup(void)
 {
     comm_init(game_comm_handlers, _countof(game_comm_handlers));
-    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE,
+    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 3, GAMMA_NONE,
         FILTERS_DISABLED);
 
     rdpq_init();
@@ -71,10 +72,6 @@ void game_loop(void)
     rdpq_attach(disp, NULL);
     rdpq_clear(background);
 
-    rdpq_text_printf(&(rdpq_textparms_t){
-        .style_id = 1,
-    }, 1, 16, 16, "FPS: %.1f", display_get_fps());
-
     if (waiting_for_host) {
         rdpq_text_print(&(rdpq_textparms_t){
             .style_id = 0,
@@ -85,7 +82,6 @@ void game_loop(void)
         }, 1, 0, 0,
         "Waiting for host!");
         rdpq_detach_show();
-
         comm_task();
         return;
     }
@@ -108,9 +104,24 @@ void game_loop(void)
                 if (!sprite) {
                     break;
                 }
-                rdpq_sprite_blit(sprite, entity->x, entity->y,
+                int tile_width = sprite->width / sprite->hslices;
+                int tile_height = sprite->height / sprite->vslices;
+                int col = entity->tile % sprite->hslices;
+                int row = entity->tile / sprite->hslices;
+                int cx = tile_width / 2;
+                int cy = tile_height / 2;
+                rdpq_set_mode_standard();
+                rdpq_mode_filter(FILTER_POINT);
+                rdpq_mode_alphacompare(1);
+                rdpq_sprite_blit(sprite, entity->x + cx, entity->y + cy,
                     &(rdpq_blitparms_t){
-                        .tile = entity->stride,
+                        .s0 = tile_width * col,
+                        .t0 = tile_height * row,
+                        .width = tile_width,
+                        .height = tile_height,
+                        .cx = cx,
+                        .cy = cy,
+                        .theta = entity->degrees / M_TWOPI,
                         .flip_x = !!(entity->flags & ENTITY_FLAGS_FLIP_X),
                         .flip_y = !!(entity->flags & ENTITY_FLAGS_FLIP_Y),
                     });
@@ -140,7 +151,7 @@ void game_loop(void)
                 } else {
                     rdpq_set_mode_fill(color_from_packed32(entity->color));
                 }
-                rdpq_fill_circle(entity->x, entity->y, entity->r);
+                rdpq_fill_circle(entity->x, entity->y, entity->radius);
                 break;
             }
 
@@ -158,6 +169,9 @@ void game_loop(void)
         }
     }
 
+    rdpq_text_printf(&(rdpq_textparms_t){
+        .style_id = 1,
+    }, 1, 16, 16, "FPS: %.1f", display_get_fps());
     rdpq_detach_show();
 
     joypad_task();
@@ -191,9 +205,10 @@ static void game_out_reset(const comm_user_hdr_t *hdr)
 
     background = RGBA32(0x17, 0x17, 0x17, 0xff);
 
-    for (int i = 0; i < _countof(sprites); i++) {
-        free(sprites[i]);
+    for (int i = 0; i < _countof(sprites_buf); i++) {
         sprites[i] = NULL;
+        free(sprites_buf[i]);
+        sprites_buf[i] = NULL;
     }
 
     for (int i = 0; i < _countof(entities); i++) {
@@ -225,25 +240,27 @@ static void game_out_sprite(const comm_user_hdr_t *hdr)
 
     comm_user_read(&pkt, sizeof(pkt));
     uint16_t sprite_len = hdr->length - sizeof(pkt);
-    if (pkt.i >= _countof(sprites)) {
+    if (pkt.i >= _countof(sprites_buf)) {
         comm_user_skip(sprite_len);
         return;
     }
 
     if (sprite_len == 0) {
-        free(sprites[pkt.i]);
         sprites[pkt.i] = NULL;
+        free(sprites_buf[pkt.i]);
+        sprites_buf[pkt.i] = NULL;
         return;
     } else {
-        void *p = realloc(sprites[pkt.i], sprite_len);
+        void *p = realloc(sprites_buf[pkt.i], sprite_len);
         if (p == NULL) {
             comm_user_skip(sprite_len);
             return;
         }
-        sprites[pkt.i] = p;
+        sprites_buf[pkt.i] = p;
     }
 
-    comm_user_read(sprites[pkt.i], sprite_len);
+    comm_user_read(sprites_buf[pkt.i], sprite_len);
+    sprites[pkt.i] = sprite_load_buf(sprites_buf[pkt.i], sprite_len);
 }
 
 static void game_out_entity(const comm_user_hdr_t *hdr)
