@@ -35,6 +35,7 @@ class Nintendo64:
 
     def on_usb_packet(self, data, type):
         if type == 5:
+            self.protocol.reset()
             self.frame = 0
             self.setup()
         elif type == COMM_USER_DATA_TYPE:

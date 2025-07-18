@@ -1,9 +1,9 @@
-#include <stdint.h>
-
 #include <libdragon.h>
 
+#include "graphics.h"
 
-void graphics_draw_circle(surface_t *surf, int x, int y, int r, uint32_t color)
+
+void rdpq_fill_circle(int x, int y, int r)
 {
     int r_sqr = r * r;
     int cx = x + r;
@@ -11,6 +11,6 @@ void graphics_draw_circle(surface_t *surf, int x, int y, int r, uint32_t color)
 
     for (int x = -r; x <= r; x++) {
         int h = (int) sqrt(r_sqr - x * x);
-        graphics_draw_line(surf, x + cx, -h + cy, x + cx, h + cy, color);
+        rdpq_fill_rectangle(cx + x, cy - h, cx + x + 1, cy + h);
     }
 }

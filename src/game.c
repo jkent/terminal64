@@ -46,7 +46,19 @@ static bool waiting_for_host;
 void game_setup(void)
 {
     comm_init(game_comm_handlers, _countof(game_comm_handlers));
-    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, FILTERS_DISABLED);
+    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE,
+        FILTERS_DISABLED);
+
+    rdpq_init();
+    rdpq_font_t *font = rdpq_font_load_builtin(FONT_BUILTIN_DEBUG_MONO);
+    rdpq_text_register_font(1, font);
+    rdpq_font_style(font, 0, &(rdpq_fontstyle_t){
+        .color = RGBA32(0xff, 0xff, 0xff, 0xff),
+    });
+    rdpq_font_style(font, 1, &(rdpq_fontstyle_t){
+        .color = RGBA32(0x99, 0x99, 0x99, 0xff),
+    });
+
     joypad_init();
 
     game_out_reset(NULL);
@@ -54,91 +66,103 @@ void game_setup(void)
 
 void game_loop(void)
 {
-    surface_t *display = display_get();
+    surface_t *disp = display_get();
 
-    graphics_fill_screen(display, graphics_convert_color(background));
+    rdpq_attach(disp, NULL);
+    rdpq_clear(background);
 
-    float fps = display_get_fps();
-    char s[10];
-    sprintf(s, "FPS: %.1f", fps);
-    color_t color = RGBA32(0x99, 0x99, 0x99, 0xFF);
-    graphics_set_color(graphics_convert_color(color), 0);
-    graphics_draw_text(display, 16, 16, s);
+    rdpq_text_printf(&(rdpq_textparms_t){
+        .style_id = 1,
+    }, 1, 16, 16, "FPS: %.1f", display_get_fps());
 
     if (waiting_for_host) {
-        const char *s = "Waiting for host!";
-        uint16_t x = display_get_width() / 2 - strlen(s) * 8 / 2;
-        uint16_t y = display_get_height() / 2 - 8 / 4;
-        color_t color = RGBA32(0xff, 0xff, 0xff, 0xff);
-        graphics_set_color(graphics_convert_color(color), 0);
-        graphics_draw_text(display, x, y, s);
-    } else {
-        for (int i = 0; i < _countof(entities); i++) {
-            entity_t *entity = entities[i];
-            if (!entity) {
-                continue;
-            }
+        rdpq_text_print(&(rdpq_textparms_t){
+            .style_id = 0,
+            .width = display_get_width(),
+            .height = display_get_height(),
+            .align = ALIGN_CENTER,
+            .valign = VALIGN_CENTER,
+        }, 1, 0, 0,
+        "Waiting for host!");
+        rdpq_detach_show();
 
-            switch (entity->type) {
-                case ENTITY_TYPE_FREE:
-                    continue;
-
-                case ENTITY_TYPE_SPRITE: {
-                    if (entity->idx >= _countof(sprites)) {
-                        break;
-                    }
-                    sprite_t *sprite = sprites[entity->idx];
-                    if (!sprite) {
-                        break;
-                    }
-                    if (entity->flags & ENTITY_FLAGS_TRANS) {
-                        graphics_draw_sprite_trans_stride(display, entity->x,
-                            entity->y, sprite, entity->stride);
-                    } else {
-                        graphics_draw_sprite_stride(display, entity->x,
-                            entity->y, sprite, entity->stride);
-                    }
-                    break;
-                }
-
-                case ENTITY_TYPE_RECTANGLE: {
-                    color_t color = color_from_packed32(entity->color);
-                    if (entity->flags & ENTITY_FLAGS_TRANS) {
-                        graphics_draw_box_trans(display, entity->x, entity->y,
-                            entity->height, entity->width,
-                            graphics_convert_color(color));
-                    } else {
-                        graphics_draw_box(display, entity->x, entity->y,
-                            entity->width, entity->height,
-                            graphics_convert_color(color));
-                    }
-                    break;
-                }
-
-                case ENTITY_TYPE_CIRCLE: {
-                    color_t color = color_from_packed32(entity->color);
-                    graphics_draw_circle(display, entity->x, entity->y,
-                        entity->r, graphics_convert_color(color));
-                    break;
-                }
-
-                case ENTITY_TYPE_TEXT: {
-                    color_t color = color_from_packed32(entity->color);
-                    graphics_set_color(graphics_convert_color(color), 0);
-                    graphics_draw_text(display, entity->x, entity->y,
-                        entity->data);
-                    break;
-                }
-            }
-        }
-
-        joypad_task();
+        comm_task();
+        return;
     }
 
-    comm_task();
-    comm_user_flush();
+    for (int i = 0; i < _countof(entities); i++) {
+        entity_t *entity = entities[i];
+        if (!entity) {
+            continue;
+        }
 
-    display_show(display);
+        switch (entity->type) {
+            case ENTITY_TYPE_FREE:
+                continue;
+
+            case ENTITY_TYPE_SPRITE: {
+                if (entity->idx >= _countof(sprites)) {
+                    break;
+                }
+                sprite_t *sprite = sprites[entity->idx];
+                if (!sprite) {
+                    break;
+                }
+                rdpq_sprite_blit(sprite, entity->x, entity->y,
+                    &(rdpq_blitparms_t){
+                        .tile = entity->stride,
+                        .flip_x = !!(entity->flags & ENTITY_FLAGS_FLIP_X),
+                        .flip_y = !!(entity->flags & ENTITY_FLAGS_FLIP_Y),
+                    });
+                break;
+            }
+
+            case ENTITY_TYPE_RECTANGLE: {
+                if (entity->flags & ENTITY_FLAGS_BLEND) {
+                    rdpq_set_mode_standard();
+                    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+                    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+                    rdpq_set_prim_color(color_from_packed32(entity->color));
+                } else {
+                    rdpq_set_mode_fill(color_from_packed32(entity->color));
+                }
+                rdpq_fill_rectangle(entity->x, entity->y,
+                    entity->x + entity->width, entity->y + entity->height);
+                break;
+            }
+
+            case ENTITY_TYPE_CIRCLE: {
+                if (entity->flags & ENTITY_FLAGS_BLEND) {
+                    rdpq_set_mode_standard();
+                    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+                    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
+                    rdpq_set_prim_color(color_from_packed32(entity->color));
+                } else {
+                    rdpq_set_mode_fill(color_from_packed32(entity->color));
+                }
+                rdpq_fill_circle(entity->x, entity->y, entity->r);
+                break;
+            }
+
+            case ENTITY_TYPE_TEXT: {
+                rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(1), 2,
+                &(rdpq_fontstyle_t){
+                    .color = color_from_packed32(entity->color),
+                });
+                rdpq_text_print(&(rdpq_textparms_t){
+                    .style_id = 2,
+
+                }, 1, entity->x, entity->y, entity->data);
+                break;
+            }
+        }
+    }
+
+    rdpq_detach_show();
+
+    joypad_task();
+    comm_user_flush();
+    comm_task();
 }
 
 static void joypad_task(void)
@@ -168,17 +192,11 @@ static void game_out_reset(const comm_user_hdr_t *hdr)
     background = RGBA32(0x17, 0x17, 0x17, 0xff);
 
     for (int i = 0; i < _countof(sprites); i++) {
-        if (!sprites[i]) {
-            continue;
-        }
         free(sprites[i]);
         sprites[i] = NULL;
     }
 
     for (int i = 0; i < _countof(entities); i++) {
-        if (!entities[i]) {
-            continue;
-        }
         free(entities[i]);
         entities[i] = NULL;
     }
@@ -213,10 +231,8 @@ static void game_out_sprite(const comm_user_hdr_t *hdr)
     }
 
     if (sprite_len == 0) {
-        if (sprites[pkt.i]) {
-            free(sprites[pkt.i]);
-            sprites[pkt.i] = NULL;
-        }
+        free(sprites[pkt.i]);
+        sprites[pkt.i] = NULL;
         return;
     } else {
         void *p = realloc(sprites[pkt.i], sprite_len);
@@ -244,18 +260,19 @@ static void game_out_entity(const comm_user_hdr_t *hdr)
     }
 
     if (entity_len == 0) {
-        if (entities[pkt.i]) {
-            free(entities[pkt.i]);
-            entities[pkt.i] = NULL;
-        }
+        free(entities[pkt.i]);
+        entities[pkt.i] = NULL;
         return;
     } else if (entities[pkt.i]) {
-        void *p = realloc(entities[pkt.i], entity_len);
-        if (p == NULL) {
-            comm_user_skip(entity_len);
-            return;
+        /* only grow, never shrink entity */
+        if (malloc_usable_size(entities[pkt.i]) < entity_len) {
+            void *p = realloc(entities[pkt.i], entity_len);
+            if (p == NULL) {
+                comm_user_skip(entity_len);
+                return;
+            }
+            entities[pkt.i] = p;
         }
-        entities[pkt.i] = p;
     } else {
         entities[pkt.i] = malloc(entity_len);
     }

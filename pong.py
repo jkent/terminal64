@@ -64,7 +64,7 @@ class Score(Entity):
 
     def update(self):
         self.text = f'{self.score[0]}:{self.score[1]}'
-        self.x = 320 / 2 - len(self.text) * 8 / 2
+        self.x = display_width / 2 - len(self.text) * 8 / 2
 
 class Pong(Game):
     def setup(self):
@@ -74,20 +74,21 @@ class Pong(Game):
         self.restart()
 
     def loop(self):
-        self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - 1)
-        self.ball.y = clamp(self.ball.y + self.delta_y, 0, display_height - 1)
+        diameter = self.ball.radius * 2
+        self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - diameter - 1)
+        self.ball.y = clamp(self.ball.y + self.delta_y, 0, display_height - diameter - 1)
 
         if collision(self.ball.bbox, self.paddles[0].bbox):
             self.delta_x = 3
         elif collision(self.ball.bbox, self.paddles[1].bbox):
             self.delta_x = -3
-        elif self.ball.y == 0 or self.ball.y == display_height - 1:
+        elif self.ball.y == 0 or self.ball.y == display_height - diameter - 1:
             self.delta_y = -self.delta_y
 
         if self.ball.x == 0:
             self.score.increment(1)
             self.restart(1)
-        elif self.ball.x == display_width - 1:
+        elif self.ball.x == display_width - diameter - 1:
             self.score.increment(0)
             self.restart(0)
 

@@ -13,7 +13,9 @@ typedef enum __packed {
 } entity_type_t;
 
 typedef enum __packed {
-    ENTITY_FLAGS_TRANS = 1 << 0,
+    ENTITY_FLAGS_BLEND  = 1 << 0,
+    ENTITY_FLAGS_FLIP_X = 1 << 4,
+    ENTITY_FLAGS_FLIP_Y = 1 << 5,
 } entity_flags_t;
 
 typedef struct {
