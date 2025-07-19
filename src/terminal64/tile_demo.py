@@ -4,7 +4,7 @@ import random
 
 import click
 
-from .game import SpriteEntity, Game, Sprite
+from .games import SpriteEntity, Game, Sprite
 
 display_width = 320
 display_height = 240

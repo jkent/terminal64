@@ -4,7 +4,7 @@ import random
 
 import click
 
-from .game import CircleEntity, Game, RectangleEntity, TextEntity, collision
+from . import CircleEntity, Game, RectangleEntity, TextEntity, collision
 
 display_width = 320
 display_height = 240

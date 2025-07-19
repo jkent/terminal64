@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from bitstring import Bits, BitStream, ConstBitStream
 
-from .nintendo64 import Nintendo64
+from ..nintendo64 import Nintendo64
 
 GAME_IN_INPUT = 0
 

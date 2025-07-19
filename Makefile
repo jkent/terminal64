@@ -1,13 +1,13 @@
-ROMNAME=ballgames
+ROMNAME=terminal64
 SOURCE_DIR=src
 BUILD_DIR=build
 include $(N64_INST)/include/n64.mk
 
 src = main.c \
       comm.c \
-	  game.c \
-	  graphics.c \
-	  util.c \
+      game.c \
+      graphics.c \
+      util.c \
 
 assets_png = $(wildcard assets/*.png)
 assets_conv = $(addprefix filesystem/,$(notdir $(assets_png:%.png=%.sprite)))
@@ -41,3 +41,4 @@ deploy: $(ROMNAME).z64
 -include $(wildcard $(BUILD_DIR)/*.d)
 
 .PHONY: all clean deploy
+
