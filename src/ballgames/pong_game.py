@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import random
-import sys
 
-from game import Entity, Game, collision
+import click
+
+from .game import CircleEntity, Game, RectangleEntity, TextEntity, collision
 
 display_width = 320
 display_height = 240
@@ -11,17 +12,16 @@ display_height = 240
 def clamp(value, min_, max_):
     return min(max_, max(min_, value))
 
-class Paddle(Entity):
-    def __init__(self, id):
+class Paddle(RectangleEntity):
+    def __init__(self, player):
         super().__init__()
-        self.type = 'rectangle'
         self.color = (0xFF, 0xFF, 0xFF)
         self.size = 0.25
         self.width = 5
         offset = 10
-        if id == 0:
+        if player == 0:
             self.x = offset
-        elif id == 1:
+        elif player == 1:
             self.x = display_width - self.width - offset
         self.pos = 0
 
@@ -39,17 +39,15 @@ class Paddle(Entity):
     def size(self, value):
         self.height = display_height * value
 
-class Ball(Entity):
+class Ball(CircleEntity):
     def __init__(self, radius):
         super().__init__()
-        self.type = 'circle'
         self.color = (0xFF, 0x00, 0x00)
         self.radius = radius
 
-class Score(Entity):
+class Score(TextEntity):
     def __init__(self):
         super().__init__()
-        self.type = 'text'
         self.color = (0xFF, 0xFF, 0x00)
         self.y = 16
         self.reset()
@@ -63,10 +61,10 @@ class Score(Entity):
         self.update()
 
     def update(self):
-        self.text = f'{self.score[0]}:{self.score[1]}'
-        self.x = display_width / 2 - len(self.text) * 8 / 2
+        self.string = f'{self.score[0]}:{self.score[1]}'
+        self.x = display_width / 2 - len(self.string) * 8 / 2
 
-class Pong(Game):
+class PongGame(Game):
     def setup(self):
         self.score = Score()
         self.ball = Ball(4)
@@ -74,21 +72,20 @@ class Pong(Game):
         self.restart()
 
     def loop(self):
-        diameter = self.ball.radius * 2
-        self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - diameter - 1)
-        self.ball.y = clamp(self.ball.y + self.delta_y, 0, display_height - diameter - 1)
+        self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - self.ball.diameter - 1)
+        self.ball.y = clamp(self.ball.y + self.delta_y, 0, display_height - self.ball.diameter- 1)
 
-        if collision(self.ball.bbox, self.paddles[0].bbox):
+        if collision(self.ball, self.paddles[0]):
             self.delta_x = 3
-        elif collision(self.ball.bbox, self.paddles[1].bbox):
+        elif collision(self.ball, self.paddles[1]):
             self.delta_x = -3
-        elif self.ball.y == 0 or self.ball.y == display_height - diameter - 1:
+        elif self.ball.y == 0 or self.ball.y == display_height - self.ball.diameter - 1:
             self.delta_y = -self.delta_y
 
         if self.ball.x == 0:
             self.score.increment(1)
             self.restart(1)
-        elif self.ball.x == display_width - diameter - 1:
+        elif self.ball.x == display_width - self.ball.diameter - 1:
             self.score.increment(0)
             self.restart(0)
 
@@ -108,11 +105,7 @@ class Pong(Game):
         self.delta_y = random.choice([3, -3])
         self.ready()
 
-if __name__ == '__main__':
-    try:
-        port = sys.argv[1]
-    except:
-        port = '/dev/ttyUSB0'
-
-    pong = Pong(port)
-    pong.run()
+@click.command
+@click.argument('port', default='/dev/ttyUSB0')
+def main(port):
+    PongGame(port).run()

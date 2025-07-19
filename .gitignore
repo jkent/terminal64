@@ -3,8 +3,10 @@
 build/
 filesystem/
 
-## Python objects
+## Python
 __pycache__/
+venv/
+*.egg-info/
 *.pyc
 *.pyd
 *.pyo
@@ -14,11 +16,15 @@ __pycache__/
 .Trashes
 ._*
 
+## Windows junk
+*Zone.Identifier
+
 ## Temporary files
 *.tmp
 *.swp
 *~
 
+## Output files
 *.v64
 *.z64
 *.elf

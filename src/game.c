@@ -97,73 +97,60 @@ void game_loop(void)
                 continue;
 
             case ENTITY_TYPE_SPRITE: {
-                if (entity->idx >= _countof(sprites)) {
+                if (entity->sprite.index >= _countof(sprites)) {
                     break;
                 }
-                sprite_t *sprite = sprites[entity->idx];
+                sprite_t *sprite = sprites[entity->sprite.index];
                 if (!sprite) {
                     break;
                 }
                 int tile_width = sprite->width / sprite->hslices;
                 int tile_height = sprite->height / sprite->vslices;
-                int col = entity->tile % sprite->hslices;
-                int row = entity->tile / sprite->hslices;
-                int cx = tile_width / 2;
-                int cy = tile_height / 2;
+                int col = entity->sprite.tile % sprite->hslices;
+                int row = entity->sprite.tile / sprite->hslices;
                 rdpq_set_mode_standard();
                 rdpq_mode_filter(FILTER_POINT);
                 rdpq_mode_alphacompare(1);
-                rdpq_sprite_blit(sprite, entity->x + cx, entity->y + cy,
-                    &(rdpq_blitparms_t){
+                rdpq_sprite_blit(sprite, float16_to_float(entity->sprite.x),
+                    float16_to_float(entity->sprite.y), &(rdpq_blitparms_t){
                         .s0 = tile_width * col,
                         .t0 = tile_height * row,
                         .width = tile_width,
                         .height = tile_height,
-                        .cx = cx,
-                        .cy = cy,
-                        .theta = entity->degrees / M_TWOPI,
-                        .flip_x = !!(entity->flags & ENTITY_FLAGS_FLIP_X),
-                        .flip_y = !!(entity->flags & ENTITY_FLAGS_FLIP_Y),
+                        .flip_x = !!(entity->sprite.flags & ENTITY_SPRITE_FLIP_X),
+                        .flip_y = !!(entity->sprite.flags & ENTITY_SPRITE_FLIP_Y),
+                        .cx = entity->sprite.cx,
+                        .cy = entity->sprite.cy,
+                        .scale_x = float16_to_float(entity->sprite.scale_x),
+                        .scale_y = float16_to_float(entity->sprite.scale_y),
+                        .theta = float16_to_float(entity->sprite.theta),
                     });
                 break;
             }
 
             case ENTITY_TYPE_RECTANGLE: {
-                if (entity->flags & ENTITY_FLAGS_BLEND) {
-                    rdpq_set_mode_standard();
-                    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
-                    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-                    rdpq_set_prim_color(color_from_packed32(entity->color));
-                } else {
-                    rdpq_set_mode_fill(color_from_packed32(entity->color));
-                }
-                rdpq_fill_rectangle(entity->x, entity->y,
-                    entity->x + entity->width, entity->y + entity->height);
+                rdpq_set_mode_fill(color_from_packed16(entity->rectangle.color));
+                rdpq_fill_rectangle(entity->rectangle.x0, entity->rectangle.y0,
+                    entity->rectangle.x1, entity->rectangle.y1);
                 break;
             }
 
             case ENTITY_TYPE_CIRCLE: {
-                if (entity->flags & ENTITY_FLAGS_BLEND) {
-                    rdpq_set_mode_standard();
-                    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
-                    rdpq_mode_blender(RDPQ_BLENDER_MULTIPLY);
-                    rdpq_set_prim_color(color_from_packed32(entity->color));
-                } else {
-                    rdpq_set_mode_fill(color_from_packed32(entity->color));
-                }
-                rdpq_fill_circle(entity->x, entity->y, entity->radius);
+                rdpq_set_mode_fill(color_from_packed16(entity->circle.color));
+                rdpq_fill_circle(entity->circle.x, entity->circle.y,
+                    entity->circle.radius);
                 break;
             }
 
             case ENTITY_TYPE_TEXT: {
                 rdpq_font_style((rdpq_font_t *) rdpq_text_get_font(1), 2,
-                &(rdpq_fontstyle_t){
-                    .color = color_from_packed32(entity->color),
-                });
+                    &(rdpq_fontstyle_t){
+                        .color = color_from_packed16(entity->text.color),
+                    });
                 rdpq_text_print(&(rdpq_textparms_t){
-                    .style_id = 2,
-
-                }, 1, entity->x, entity->y, entity->data);
+                        .style_id = 2,
+                    }, 1, float16_to_float(entity->text.x),
+                    float16_to_float(entity->text.y), entity->text.string);
                 break;
             }
         }
@@ -280,18 +267,13 @@ static void game_out_entity(const comm_user_hdr_t *hdr)
         free(entities[pkt.i]);
         entities[pkt.i] = NULL;
         return;
-    } else if (entities[pkt.i]) {
-        /* only grow, never shrink entity */
-        if (malloc_usable_size(entities[pkt.i]) < entity_len) {
-            void *p = realloc(entities[pkt.i], entity_len);
-            if (p == NULL) {
-                comm_user_skip(entity_len);
-                return;
-            }
-            entities[pkt.i] = p;
-        }
     } else {
-        entities[pkt.i] = malloc(entity_len);
+        void *p = realloc(entities[pkt.i], entity_len);
+        if (p == NULL) {
+            comm_user_skip(entity_len);
+            return;
+        }
+        entities[pkt.i] = p;
     }
 
     if (entities[pkt.i]) {

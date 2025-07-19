@@ -4,6 +4,8 @@
 
 #include <libdragon.h>
 
+#include "util.h"
+
 typedef enum __packed {
     ENTITY_TYPE_FREE,
     ENTITY_TYPE_SPRITE,
@@ -13,35 +15,48 @@ typedef enum __packed {
 } entity_type_t;
 
 typedef enum __packed {
-    ENTITY_FLAGS_BLEND  = 1 << 0,
-    ENTITY_FLAGS_FLIP_X = 1 << 4,
-    ENTITY_FLAGS_FLIP_Y = 1 << 5,
-} entity_flags_t;
+    ENTITY_SPRITE_FLIP_X = BIT(0),
+    ENTITY_SPRITE_FLIP_Y = BIT(1),
+} entity_sprite_flags_t;
 
-typedef struct {
-    uint16_t x;
-    uint16_t y;
-    uint16_t width;
-    uint16_t height;
-} rect_t;
-
-typedef struct {
+typedef struct __packed {
     entity_type_t type;
-    entity_flags_t flags;
-    uint16_t idx;
-    uint16_t x;
-    uint16_t y;
     union {
-        uint16_t width;
-        uint16_t radius;
-        uint16_t tile;
+        struct __packed {
+            uint8_t index;
+            uint8_t tile;
+            float16 x;
+            float16 y;
+            entity_sprite_flags_t flags;
+            uint8_t cx;
+            uint8_t cy;
+            float16 scale_x;
+            float16 scale_y;
+            float16 theta;
+        } sprite;
+        struct __packed {
+            uint32_t x0 : 12;
+            uint32_t y0 : 12;
+            uint32_t x1 : 12;
+            uint32_t y1 : 12;
+            uint16_t color;
+        } rectangle;
+        struct __packed {
+            uint32_t x : 12;
+            uint32_t y : 12;
+            uint8_t radius;
+            uint16_t color;
+        } circle;
+        struct __packed {
+            float16 x;
+            float16 y;
+            uint32_t width : 12;
+            uint32_t height : 12;
+            uint8_t flags;
+            uint16_t color;
+            char string[0];
+        } text;
     };
-    union {
-        uint16_t height;
-        uint16_t degrees;
-    };
-    uint32_t color;
-    char data[0];
 } entity_t;
 
 void game_setup(void);

@@ -3,7 +3,7 @@
 import struct
 import time
 
-from summercart64 import SummerCart64Protocol as Protocol
+from .summercart64 import SummerCart64Protocol as Protocol
 
 COMM_USER_DATA_TYPE = 0xFF
 

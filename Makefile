@@ -7,6 +7,7 @@ src = main.c \
       comm.c \
 	  game.c \
 	  graphics.c \
+	  util.c \
 
 assets_png = $(wildcard assets/*.png)
 assets_conv = $(addprefix filesystem/,$(notdir $(assets_png:%.png=%.sprite)))

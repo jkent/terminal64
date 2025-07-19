@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ballgames"
+description = "Ballgames"
+readme = "README.md"
+version = "0.1.0"
+license = "MIT"
+authors = [
+    {name = "Jeff Kent", email = "jeff@jkent.net"},
+]
+maintainers = [
+    {name = "Jeff Kent", email = "jeff@jkent.net"},
+]
+requires-python = ">= 3.11.2"
+dependencies = [
+    "bitstring >= 4.3.1",
+    "click >= 8.2.1",
+    "pyserial >= 3.5",
+]
+
+[project.scripts]
+pong_game = "ballgames:pong_game.main"
+tile_demo = "ballgames:tile_demo.main"
+
