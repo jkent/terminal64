@@ -36,7 +36,7 @@ clean:
 	rm -rf build filesystem *.z64
 
 deploy: $(ROMNAME).z64
-	@sc64deployer upload $<
+	@$(N64_INST)/bin/sc64deployer upload $<
 
 -include $(wildcard $(BUILD_DIR)/*.d)
 
