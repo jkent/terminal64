@@ -20,13 +20,15 @@ class TilesEntity(SpriteEntity):
     def __init__(self):
         super().__init__()
         self.index = 1
-        self.x = display_width / 2 - 32 / 2
-        self.y = display_height / 2 - 32 / 2
+        self.x = display_width / 2 - 32 / 2 + 16
+        self.y = display_height / 2 - 32 / 2 + 16
+        self.cx = 16
+        self.cy = 16
 
     def change(self):
         self.tile = random.randint(0, 3)
-        self.scale_x = 2
-        self.scale_y = 2
+        self.scale_x = 8
+        self.scale_y = 8
         self.theta = random.vonmisesvariate(0, 0)
 
 class TileDemo(Game):
@@ -43,7 +45,7 @@ class TileDemo(Game):
     def restart(self):
         self.reset()
         self.sprites = [self.n64brew_sprite, self.tiles_sprite]
-        self.entities = [self.n64brew_entity, self.tiles_entity]
+        self.entities = [self.tiles_entity, self.n64brew_entity]
         self.ready()
 
 @click.command
