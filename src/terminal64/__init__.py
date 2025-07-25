@@ -4,8 +4,8 @@ USB_HEARTBEAT   = 5
 USB_MESSAGES    = 255
 
 class Terminal64:
-    def __init__(self, cartridge):
-        self.cart = cartridge
+    def __init__(self, cart):
+        self.cart = cart
         self.cart.recv_usb_pkt = self.recv_usb_pkt
         self.message_buffer = bytearray()
         self.usb_pkt_handlers = {

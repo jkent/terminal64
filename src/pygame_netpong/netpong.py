@@ -176,7 +176,7 @@ class Scene:
             screen.blit(surface, (x, y))
 
         if not self.other_ready:
-            surface = font.render('Player 2: Not ready', False, 'white')
+            surface = font.render('Player 2 not ready.', False, 'white')
             x = DISP_WIDTH / 2 - surface.get_width() / 2
             y = DISP_HEIGHT / 2 - surface.get_height() / 2 + 8
             screen.blit(surface, (x, y))
