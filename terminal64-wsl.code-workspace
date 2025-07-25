@@ -52,6 +52,29 @@
 					"showReuseMessage": true,
 					"clear": true
 				}
+			},
+			{
+				"label": "USB Autoattach",
+				"type": "shell",
+				"command": "${workspaceFolder}/tools/autoattach.py",
+				"group": "none",
+				"problemMatcher": [],
+				"isBackground": true,
+				"runOptions": {
+					"runOn": "folderOpen"
+				},
+				"presentation": {
+					"echo": false,
+					"reveal": "never",
+					"focus": false,
+					"panel": "shared",
+					"showReuseMessage": true,
+					"clear": false
+				},
+				"icon": {
+					"color": "terminal.ansiGreen",
+					"id": "debug-disconnect"
+				}
 			}
 		]
 	}

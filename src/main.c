@@ -5,7 +5,6 @@
 #include <libdragon.h>
 #include <usb.h>
 
-#include "comm.h"
 #include "game.h"
 #include "util.h"
 

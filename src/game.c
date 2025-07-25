@@ -3,9 +3,9 @@
 
 #include <libdragon.h>
 
-#include "comm.h"
 #include "game.h"
 #include "graphics.h"
+#include "usb/messages.h"
 #include "util.h"
 
 
@@ -24,18 +24,18 @@ enum {
 };
 
 static void joypad_task(void);
-static void game_out_reset(const comm_user_hdr_t *hdr);
-static void game_out_ready(const comm_user_hdr_t *hdr);
-static void game_out_background(const comm_user_hdr_t *hdr);
-static void game_out_sprite(const comm_user_hdr_t *hdr);
-static void game_out_entity(const comm_user_hdr_t *hdr);
+static void game_out_reset_message(size_t length);
+static void game_out_ready_message(size_t length);
+static void game_out_background_message(size_t length);
+static void game_out_sprite_message(size_t length);
+static void game_out_entity_message(size_t length);
 
-comm_user_func_t game_comm_handlers[] = {
-    [GAME_OUT_RESET]        = game_out_reset,
-    [GAME_OUT_READY]        = game_out_ready,
-    [GAME_OUT_BACKGROUND]   = game_out_background,
-    [GAME_OUT_SPRITE]       = game_out_sprite,
-    [GAME_OUT_ENTITY]       = game_out_entity,
+usb_message_handler_t message_handlers[] = {
+    [GAME_OUT_RESET]        = game_out_reset_message,
+    [GAME_OUT_READY]        = game_out_ready_message,
+    [GAME_OUT_BACKGROUND]   = game_out_background_message,
+    [GAME_OUT_SPRITE]       = game_out_sprite_message,
+    [GAME_OUT_ENTITY]       = game_out_entity_message,
 };
 
 static color_t background;
@@ -46,7 +46,7 @@ static bool waiting_for_host;
 
 void game_setup(void)
 {
-    comm_init(game_comm_handlers, _countof(game_comm_handlers));
+    usb_messages_init(message_handlers, _countof(message_handlers));
     display_init(RESOLUTION_320x240, DEPTH_16_BPP, 3, GAMMA_NONE,
         FILTERS_DISABLED);
 
@@ -62,7 +62,7 @@ void game_setup(void)
 
     joypad_init();
 
-    game_out_reset(NULL);
+    game_out_reset_message(0);
 }
 
 void game_loop(void)
@@ -82,7 +82,7 @@ void game_loop(void)
         }, 1, 0, 0,
         "Waiting for host!");
         rdpq_detach_show();
-        comm_task();
+        usb_messages_task();
         return;
     }
 
@@ -162,31 +162,24 @@ void game_loop(void)
     rdpq_detach_show();
 
     joypad_task();
-    comm_user_flush();
-    comm_task();
+    usb_messages_task();
 }
 
 static void joypad_task(void)
 {
     static joypad_inputs_t inputs_last;
-    struct {
-        comm_user_hdr_t hdr;
-        joypad_inputs_t inputs;
-    } pkt;
+    joypad_inputs_t inputs;
 
     joypad_poll();
-    pkt.hdr.length = sizeof(pkt.inputs);
-    pkt.hdr.type = GAME_IN_INPUT;
-    pkt.inputs = joypad_get_inputs(JOYPAD_PORT_1);
+    inputs = joypad_get_inputs(JOYPAD_PORT_1);
 
-    if (memcmp(&inputs_last, &pkt.inputs, sizeof(inputs_last))) {
-        comm_user_write(&pkt, sizeof(pkt));
+    if (memcmp(&inputs_last, &inputs, sizeof(inputs_last))) {
+        queue_usb_message(GAME_IN_INPUT, &inputs, sizeof(inputs));
     }
-
-    inputs_last = pkt.inputs;
+    inputs_last = inputs;
 }
 
-static void game_out_reset(const comm_user_hdr_t *hdr)
+static void game_out_reset_message(size_t length)
 {
     waiting_for_host = true;
 
@@ -204,31 +197,31 @@ static void game_out_reset(const comm_user_hdr_t *hdr)
     }
 }
 
-static void game_out_ready(const comm_user_hdr_t *hdr)
+static void game_out_ready_message(size_t length)
 {
     waiting_for_host = false;
 }
 
-static void game_out_background(const comm_user_hdr_t *hdr)
+static void game_out_background_message(size_t length)
 {
     struct {
         uint32_t color;
     } pkt;
 
-    comm_user_read(&pkt, sizeof(pkt));
+    usb_messages_read(&pkt, sizeof(pkt));
     background = color_from_packed32(pkt.color);
 }
 
-static void game_out_sprite(const comm_user_hdr_t *hdr)
+static void game_out_sprite_message(size_t length)
 {
     struct {
         uint16_t i;
     } pkt;
 
-    comm_user_read(&pkt, sizeof(pkt));
-    uint16_t sprite_len = hdr->length - sizeof(pkt);
+    usb_messages_read(&pkt, sizeof(pkt));
+    uint16_t sprite_len = length - sizeof(pkt);
     if (pkt.i >= _countof(sprites_buf)) {
-        comm_user_skip(sprite_len);
+        usb_messages_skip(sprite_len);
         return;
     }
 
@@ -240,26 +233,26 @@ static void game_out_sprite(const comm_user_hdr_t *hdr)
     } else {
         void *p = realloc(sprites_buf[pkt.i], sprite_len);
         if (p == NULL) {
-            comm_user_skip(sprite_len);
+            usb_messages_skip(sprite_len);
             return;
         }
         sprites_buf[pkt.i] = p;
     }
 
-    comm_user_read(sprites_buf[pkt.i], sprite_len);
+    usb_messages_read(sprites_buf[pkt.i], sprite_len);
     sprites[pkt.i] = sprite_load_buf(sprites_buf[pkt.i], sprite_len);
 }
 
-static void game_out_entity(const comm_user_hdr_t *hdr)
+static void game_out_entity_message(size_t length)
 {
     struct {
         uint16_t i;
     } pkt;
 
-    comm_user_read(&pkt, sizeof(pkt));
-    uint16_t entity_len = hdr->length - sizeof(pkt);
+    usb_messages_read(&pkt, sizeof(pkt));
+    uint16_t entity_len = length - sizeof(pkt);
     if (pkt.i >= _countof(entities)) {
-        comm_user_skip(entity_len);
+        usb_messages_skip(entity_len);
         return;
     }
 
@@ -270,15 +263,15 @@ static void game_out_entity(const comm_user_hdr_t *hdr)
     } else {
         void *p = realloc(entities[pkt.i], entity_len);
         if (p == NULL) {
-            comm_user_skip(entity_len);
+            usb_messages_skip(entity_len);
             return;
         }
         entities[pkt.i] = p;
     }
 
     if (entities[pkt.i]) {
-        comm_user_read(entities[pkt.i], entity_len);
+        usb_messages_read(entities[pkt.i], entity_len);
     } else {
-        comm_user_skip(entity_len);
+        usb_messages_skip(entity_len);
     }
 }

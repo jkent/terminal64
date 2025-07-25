@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
+import asyncio
 import random
 
 import click
 
-from .games import SpriteEntity, Game, Sprite
+from . import Terminal64
+from .cart import SummerCart64
+from .game import *
 
 display_width = 320
 display_height = 240
@@ -35,20 +38,26 @@ class TileDemo(Game):
     def setup(self):
         self.n64brew_sprite = Sprite('filesystem/n64brew.sprite')
         self.tiles_sprite = Sprite('filesystem/tiles.sprite')
+        self.sprites = [self.n64brew_sprite, self.tiles_sprite]
+
         self.n64brew_entity = N64BrewEntity()
         self.tiles_entity = TilesEntity()
-        self.restart()
+        self.entities = [self.tiles_entity, self.n64brew_entity]
+
+        self.ready()
 
     def loop(self):
         self.tiles_entity.change()
 
-    def restart(self):
-        self.reset()
-        self.sprites = [self.n64brew_sprite, self.tiles_sprite]
-        self.entities = [self.tiles_entity, self.n64brew_entity]
-        self.ready()
+async def amain(uart):
+    cart = await SummerCart64.connect(uart)
+    tile_demo = TileDemo(cart)
+    await tile_demo.run()
 
 @click.command
-@click.argument('port', default='/dev/ttyUSB0')
-def main(port):
-    TileDemo(port).run()
+@click.argument('uart', default='/dev/ttyUSB0')
+def main(uart):
+    try:
+        asyncio.run(amain(uart))
+    except KeyboardInterrupt:
+        pass

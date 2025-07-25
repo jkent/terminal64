@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
+import asyncio
 import random
 
 import click
 
-from . import CircleEntity, Game, RectangleEntity, TextEntity, collision
-
-display_width = 320
-display_height = 240
+from .cart import SummerCart64
+from .game import *
 
 def clamp(value, min_, max_):
     return min(max_, max(min_, value))
@@ -22,22 +21,22 @@ class Paddle(RectangleEntity):
         if player == 0:
             self.x = offset
         elif player == 1:
-            self.x = display_width - self.width - offset
+            self.x = disp_width - self.width - offset
         self.pos = 0
 
     @property
     def pos(self):
-        return self.y * 2 / (display_height - self.height) - 1
+        return self.y * 2 / (disp_height - self.height) - 1
     @pos.setter
     def pos(self, value):
-        self.y = (value + 1) / 2 * (display_height - self.height)
+        self.y = (value + 1) / 2 * (disp_height - self.height)
 
     @property
     def size(self):
-        return display_height / self.height
+        return disp_height / self.height
     @pos.setter
     def size(self, value):
-        self.height = display_height * value
+        self.height = disp_height * value
 
 class Ball(CircleEntity):
     def __init__(self, radius):
@@ -62,50 +61,59 @@ class Score(TextEntity):
 
     def update(self):
         self.string = f'{self.score[0]}:{self.score[1]}'
-        self.x = display_width / 2 - len(self.string) * 8 / 2
+        self.x = disp_width / 2 - len(self.string) * 8 / 2
 
-class PongGame(Game):
+class Pong(Game):
     def setup(self):
         self.score = Score()
         self.ball = Ball(4)
-        self.paddles = [Paddle(0), Paddle(1)]
+        self.paddle = [Paddle(0), Paddle(1)]
         self.restart()
 
     def loop(self):
-        self.ball.x = clamp(self.ball.x + self.delta_x, 0, display_width - self.ball.diameter - 1)
-        self.ball.y = clamp(self.ball.y + self.delta_y, 0, display_height - self.ball.diameter- 1)
+        self.paddle[1].pos = self.ball.y / 240 * 2 - 1
 
-        if collision(self.ball, self.paddles[0]):
+        self.ball.x = clamp(self.ball.x + self.delta_x, 0, disp_width - self.ball.diameter - 1)
+        self.ball.y = clamp(self.ball.y + self.delta_y, 0, disp_height - self.ball.diameter- 1)
+
+        if collision(self.ball, self.paddle[0]):
             self.delta_x = 3
-        elif collision(self.ball, self.paddles[1]):
+        elif collision(self.ball, self.paddle[1]):
             self.delta_x = -3
-        elif self.ball.y == 0 or self.ball.y == display_height - self.ball.diameter - 1:
+        elif self.ball.y == 0 or self.ball.y == disp_height - self.ball.diameter - 1:
             self.delta_y = -self.delta_y
 
         if self.ball.x == 0:
             self.score.increment(1)
             self.restart(1)
-        elif self.ball.x == display_width - self.ball.diameter - 1:
+        elif self.ball.x == disp_width - self.ball.diameter - 1:
             self.score.increment(0)
             self.restart(0)
 
-    def on_input(self, inputs):
+    def handle_input(self, inputs):
         pos = clamp(inputs.stick_y / -72.0, -1.0, 1.0)
-        self.paddles[0].pos = pos
-        self.paddles[1].pos = -pos
+        self.paddle[0].pos = pos
 
     def restart(self, winner=1):
         self.reset()
-        self.entities = [self.score, self.ball] + self.paddles
+        self.entities = [self.score, self.ball] + self.paddle
         for entity in self.entities:
             entity._dirty = True
-        self.ball.x = display_width / 2 - self.ball.radius / 2
-        self.ball.y = display_height / 2 - self.ball.radius / 2
+        self.ball.x = disp_width / 2 - self.ball.radius / 2
+        self.ball.y = disp_height / 2 - self.ball.radius / 2
         self.delta_x = 3 if winner == 1 else -3
         self.delta_y = random.choice([3, -3])
         self.ready()
 
+async def amain(uart):
+    cart = await SummerCart64.connect(uart)
+    tile_demo = Pong(cart)
+    await tile_demo.run()
+
 @click.command
-@click.argument('port', default='/dev/ttyUSB0')
-def main(port):
-    PongGame(port).run()
+@click.argument('uart', default='/dev/ttyUSB0')
+def main(uart):
+    try:
+        asyncio.run(amain(uart))
+    except KeyboardInterrupt:
+        pass

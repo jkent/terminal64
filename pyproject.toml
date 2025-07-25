@@ -18,10 +18,12 @@ requires-python = ">= 3.11.2"
 dependencies = [
     "bitstring >= 4.3.1",
     "click >= 8.2.1",
-    "pyserial >= 3.5",
+    "json_delta >= 2.0.2",
+    "pyserial-asyncio >= 0.6",
 ]
 
 [project.scripts]
-pong = "terminal64.games:pong.main"
-tile_demo = "terminal64:tile_demo.main"
-
+netpong = "terminal64:netpong.main"
+pong = "terminal64:pong.main"
+server = "terminal64:server.main"
+sprite_demo = "terminal64:sprite_demo.main"
