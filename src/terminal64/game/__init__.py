@@ -25,6 +25,7 @@ GAME_OUT_ENTITY     = 4
 
 class Game:
     def __init__(self, cart):
+        self.cart = cart
         self.t64 = Terminal64(cart)
         self.t64.usb_pkt_handlers[USB_HEARTBEAT] = self.handle_usb_heartbeat
         self.t64.handle_usb_message = self.handle_usb_message
@@ -47,7 +48,7 @@ class Game:
         self.t64.queue_usb_message(GAME_OUT_RESET)
 
     async def areset(self):
-        await self.t64.cartridge.resync()
+        await self.cart.reset()
         self.reset()
         self.setup()
         self.flush()

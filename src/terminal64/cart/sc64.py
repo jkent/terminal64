@@ -10,7 +10,7 @@ class SummerCart64(asyncio.Protocol):
         self.transport = transport
         self._buffer = bytearray()
         self._cmd_pending = []
-        asyncio.create_task(self.resync())
+        asyncio.create_task(self.reset())
 
     def connection_lost(self):
         self.connected.clear()
@@ -20,7 +20,7 @@ class SummerCart64(asyncio.Protocol):
         while len(self._buffer) > 8:
             pkt_type = self._buffer[0:3]
             if pkt_type not in (b'CMP', b'ERR', b'PKT'):
-                asyncio.create_task(self.resync())
+                asyncio.create_task(self.reset())
                 return
 
             pkt_id = self._buffer[3:4].decode()
@@ -41,7 +41,7 @@ class SummerCart64(asyncio.Protocol):
                         break
             del self._buffer[:8 + data_length]
 
-    async def resync(self):
+    async def reset(self):
         self._buffer.clear()
         self._cmd_pending.clear()
 
@@ -148,7 +148,7 @@ class SummerCart64(asyncio.Protocol):
         try:
             await asyncio.wait_for(event.wait(), 0.5)
         except TimeoutError:
-            await self.resync()
+            await self.reset()
 
         return pending['status'], pending['data']
 
