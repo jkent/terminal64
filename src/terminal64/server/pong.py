@@ -114,10 +114,6 @@ class PongGame(ServerGame):
         self.paddle[1].pos = clamp(pos, -1, 1)
 
         self.state['paddle'] = [self.paddle[0].state, self.paddle[1].state]
-        if ready < 2:
-            return
-
-        self.ball.move()
 
         if self.ball.y == self.ball.min_y or self.ball.y == self.ball.max_y:
             self.ball.delta_y = -self.ball.delta_y
@@ -134,6 +130,11 @@ class PongGame(ServerGame):
             self.reset(winner=1)
 
         self.state['ball'] = self.ball.state
+
+        if ready < 2:
+            return
+
+        self.ball.move()
 
     def join(self, player_id):
         self.state['player'][player_id]['ready'] = False
