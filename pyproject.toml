@@ -22,8 +22,14 @@ dependencies = [
     "pyserial-asyncio >= 0.6",
 ]
 
+[project.optional-dependencies]
+pygame = [
+    "pygame >= 2.6.1",
+]
+
 [project.scripts]
 netpong = "terminal64:netpong.main"
 pong = "terminal64:pong.main"
+pygame-netpong = "pygame_netpong:netpong.main"
 server = "terminal64:server.main"
 sprite_demo = "terminal64:sprite_demo.main"

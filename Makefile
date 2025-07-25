@@ -6,7 +6,7 @@ include $(N64_INST)/include/n64.mk
 src = main.c \
       game.c \
       graphics.c \
-	  usb/messages.c \
+      usb/messages.c \
       util.c \
 
 assets_png = $(wildcard assets/*.png)
