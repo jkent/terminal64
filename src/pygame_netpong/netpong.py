@@ -3,15 +3,14 @@ import json
 import os
 from copy import deepcopy
 
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "True"
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "TRUE"
 
 import click
 import json_delta
 import pygame
 
-MOVE_PERCENT = 0.05
-DISP_WIDTH = 320
-DISP_HEIGHT = 240
+disp_width = 320
+disp_height = 240
 
 player_id = 0
 
@@ -86,12 +85,12 @@ class Paddle:
         if self._paddle_num == 0:
             self.x = self.offset
         elif self._paddle_num == 1:
-            self.x = DISP_WIDTH - self.width - self.offset
+            self.x = disp_width - self.width - self.offset
         self.update()
 
     def update(self):
-        self.height = DISP_HEIGHT * self.size
-        self.y = (self.pos + 1) / 2 * (DISP_HEIGHT - self.height)
+        self.height = disp_height * self.size
+        self.y = (self.pos + 1) / 2 * (disp_height - self.height)
         self._rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, screen):
@@ -100,8 +99,8 @@ class Paddle:
 class Ball:
     def __init__(self):
         self.radius = 4
-        self.x = DISP_WIDTH / 2
-        self.y = DISP_HEIGHT / 2
+        self.x = disp_width / 2
+        self.y = disp_height / 2
         self.update()
 
     def update(self):
@@ -144,8 +143,8 @@ class Scene:
         if player_id == 1:
             self.paddle[0].pos = -self.paddle[0].pos
             self.paddle[1].pos = -self.paddle[1].pos
-            self.ball.x = 320 - self.ball.x - self.ball.radius * 2
-            self.ball.y = 240 - self.ball.y - self.ball.radius * 2
+            self.ball.x = disp_width - self.ball.x - self.ball.radius * 2
+            self.ball.y = disp_height - self.ball.y - self.ball.radius * 2
 
         score = client.state.get('score', [0, 0])
         self.score = [score[player_id], score[1 - player_id]]
@@ -158,8 +157,9 @@ class Scene:
         screen.fill('black')
 
         font = pygame.font.SysFont('monospace', 12)
-        surface = font.render(f'{self.score[0]}:{self.score[1]}', False, 'yellow')
-        x = DISP_WIDTH / 2 - surface.get_width() / 2
+        surface = font.render(f'{self.score[0]}:{self.score[1]}', False,
+                              'yellow')
+        x = disp_width / 2 - surface.get_width() / 2
         y = 32 / 2 - surface.get_height() / 2
         screen.blit(surface, (x, y))
 
@@ -171,14 +171,14 @@ class Scene:
 
         if not self.self_ready:
             surface = font.render('Press spacebar!', False, 'white')
-            x = DISP_WIDTH / 2 - surface.get_width() / 2
-            y = DISP_HEIGHT / 2 - surface.get_height() / 2 - 8
+            x = disp_width / 2 - surface.get_width() / 2
+            y = disp_height / 2 - surface.get_height() / 2 - 8
             screen.blit(surface, (x, y))
 
         if not self.other_ready:
             surface = font.render('Player 2 not ready.', False, 'white')
-            x = DISP_WIDTH / 2 - surface.get_width() / 2
-            y = DISP_HEIGHT / 2 - surface.get_height() / 2 + 8
+            x = disp_width / 2 - surface.get_width() / 2
+            y = disp_height / 2 - surface.get_height() / 2 + 8
             screen.blit(surface, (x, y))
 
 async def event_process(events, client):
@@ -197,10 +197,10 @@ async def event_process(events, client):
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
-                player['pos'] = max(-1, player['pos'] - MOVE_PERCENT)
+                player['pos'] = max(-1, player['pos'] - 0.05)
                 client.send_delta()
             if event.key == pygame.K_s:
-                player['pos'] = min(1, player['pos'] + MOVE_PERCENT)
+                player['pos'] = min(1, player['pos'] + 0.05)
                 client.send_delta()
 
 async def async_main(host, port):
@@ -214,7 +214,7 @@ async def async_main(host, port):
     pygame.key.set_repeat(25, 25)
 
     clock = pygame.time.Clock()
-    screen = pygame.display.set_mode((DISP_WIDTH, DISP_HEIGHT))
+    screen = pygame.display.set_mode((disp_width, disp_height))
 
     scene = Scene()
     transport, client = await loop.create_connection(GameClient, host, port)

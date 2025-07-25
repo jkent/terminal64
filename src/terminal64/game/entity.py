@@ -245,7 +245,7 @@ class SpriteEntity(Entity):
 class SolidEntity(Entity):
     def __init__(self):
         super().__init__()
-        self._color = 0x0001
+        self._color = 0xffff
 
     @property
     def color(self):
@@ -260,7 +260,7 @@ class SolidEntity(Entity):
     @color.setter
     def color(self, value):
         if len(value) == 3:
-            value = value + (0xff,)
+            value = value + (255,)
         if value != self.color:
             r = value[0] >> 3 & 0x1f
             g = value[1] >> 3 & 0x1f
@@ -273,7 +273,6 @@ class RectangleEntity(SolidEntity):
     def __init__(self):
         super().__init__()
         self._type = RECTANGLE_ENTITY
-        self._color = 0x0001
 
     @property
     def bitstream(self):
@@ -318,11 +317,13 @@ class CircleEntity(SolidEntity):
         return bs
 
 class TextEntity(SolidEntity):
-    def __init__(self):
+    def __init__(self, string=None):
         super().__init__()
         self._type = TEXT_ENTITY
         self._flags = 0
         self._data = b'\0'
+        if string is not None:
+            self.string = string
 
     @property
     def flags(self):

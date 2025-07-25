@@ -9,10 +9,8 @@ from terminal64.game.entity import CIRCLE_ENTITY, SKIP_ENTITY, TEXT_ENTITY
 
 from .cart import SummerCart64
 from .game import *
+from .util import clamp
 
-
-def clamp(value, min_, max_):
-    return min(max_, max(min_, value))
 
 class Paddle(RectangleEntity):
     def __init__(self, player):
@@ -81,8 +79,20 @@ class Pong(Game, GameClient):
     def setup(self):
         self.score = Score()
         self.ball = Ball(4)
-        self.paddle = [Paddle(0), Paddle(1)]
-        self.text = [TextEntity(), TextEntity()]
+        self.paddle = [
+            Paddle(0),
+            Paddle(1)
+        ]
+
+        self.text = [
+            TextEntity('Press start!'),
+            TextEntity('Player 2 not ready.'),
+        ]
+        self.text[0].x = disp_width / 2 - len(self.text[0].string) * 6 / 2
+        self.text[0].y = disp_height / 2 - 4
+        self.text[1].x = disp_width / 2 - len(self.text[1].string) * 6 / 2
+        self.text[1].y = disp_height / 2 + 8
+
         self.reset()
         self.entities = [self.score, self.ball] + self.paddle + self.text
         self.ready()
@@ -91,28 +101,18 @@ class Pong(Game, GameClient):
         if self.player_id is None:
             return
 
-        player_self = self.state['player'][self.player_id]
-        player_other = self.state['player'][1 - self.player_id]
+        self_ready = self.state['player'][self.player_id]['ready']
+        other_ready = self.state['player'][1 - self.player_id]['ready']
 
-        entity = self.text[0]
-        entity.type = SKIP_ENTITY if player_self['ready'] else TEXT_ENTITY
-        entity.string = 'Press start!'
-        entity.x = disp_width / 2 - len(entity.string) * 6 / 2
-        entity.y = disp_height / 2 - 4
-        entity.color = (255, 255, 255)
-
-        entity = self.text[1]
-        entity.type = SKIP_ENTITY if player_other['ready'] else TEXT_ENTITY
-        entity.string = 'Player 2 not ready.'
-        entity.x = disp_width / 2 - len(entity.string) * 6 / 2
-        entity.y = disp_height / 2 + 8
-        entity.color = (255, 255, 255)
+        self.text[0].type = SKIP_ENTITY if self_ready else TEXT_ENTITY
+        self.text[1].type = SKIP_ENTITY if other_ready else TEXT_ENTITY
 
         self.ball.x = self.state['ball']['x']
         self.ball.y = self.state['ball']['y']
         self.paddle[0].pos = self.state['paddle'][self.player_id]['pos']
         self.paddle[1].pos = self.state['paddle'][1 - self.player_id]['pos']
 
+        # flip the field
         if self.player_id == 1:
             self.ball.x = disp_width - self.ball.x - self.ball.diameter
             self.ball.y = disp_height - self.ball.y - self.ball.diameter
@@ -125,7 +125,7 @@ class Pong(Game, GameClient):
         ]
         self.score.update()
 
-        if not player_self['ready'] or not player_other['ready']:
+        if not self_ready or not other_ready:
             self.ball.type = SKIP_ENTITY
         else:
             self.ball.type = CIRCLE_ENTITY

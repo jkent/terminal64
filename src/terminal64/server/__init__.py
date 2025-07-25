@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from json_delta import diff, patch
 
-from ..game.display import disp_height, disp_width
+from ..game import disp_height, disp_width
 
 
 class GameFullException(Exception):

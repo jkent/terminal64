@@ -7,14 +7,12 @@ import click
 
 from .cart import SummerCart64
 from .game import *
+from .util import clamp
 
-def clamp(value, min_, max_):
-    return min(max_, max(min_, value))
 
 class Paddle(RectangleEntity):
     def __init__(self, player):
         super().__init__()
-        self.color = (0xFF, 0xFF, 0xFF)
         self.size = 0.25
         self.width = 5
         offset = 10
@@ -73,14 +71,18 @@ class Pong(Game):
     def loop(self):
         self.paddle[1].pos = self.ball.y / 240 * 2 - 1
 
-        self.ball.x = clamp(self.ball.x + self.delta_x, 0, disp_width - self.ball.diameter - 1)
-        self.ball.y = clamp(self.ball.y + self.delta_y, 0, disp_height - self.ball.diameter- 1)
+        self.ball.x = clamp(self.ball.x + self.delta_x, 0,
+                            disp_width - self.ball.diameter - 1)
+        self.ball.y = clamp(self.ball.y + self.delta_y, 0,
+                            disp_height - self.ball.diameter- 1)
 
         if collision(self.ball, self.paddle[0]):
             self.delta_x = 3
         elif collision(self.ball, self.paddle[1]):
             self.delta_x = -3
-        elif self.ball.y == 0 or self.ball.y == disp_height - self.ball.diameter - 1:
+        elif self.ball.y == 0:
+            self.delta_y = -self.delta_y
+        elif self.ball.y == disp_height - self.ball.diameter - 1:
             self.delta_y = -self.delta_y
 
         if self.ball.x == 0:
