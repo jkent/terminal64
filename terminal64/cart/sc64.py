@@ -23,7 +23,7 @@ class SummerCart64(asyncio.Protocol):
                 asyncio.create_task(self.reset())
                 return
 
-            pkt_id = self._buffer[3:4].decode()
+            pkt_id = chr(self._buffer[3])
             data_length = int.from_bytes(self._buffer[4:8])
             if len(self._buffer) + 8 < data_length:
                 return

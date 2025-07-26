@@ -1,4 +1,4 @@
-[submodule "libdragon"]
-	path = libdragon
-	url = https://github.com/DragonMinded/libdragon
+[submodule "third-party/libdragon"]
+	path = third-party/libdragon
+	url = https://github.com/DragonMinded/libdragon.git
 	branch = preview
